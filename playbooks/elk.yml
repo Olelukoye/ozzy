@@ -1,0 +1,12 @@
+- name: Setup ELK stack on ubu2
+  hosts: elk
+  become: yes
+  roles:
+    - common
+    - monitoring
+    - base_security
+    - elk
+
+  vars:
+    kibana_server_ip: "{{ kibana_ip }}"
+    elk_version: "{{ elk_version }}"

@@ -1,0 +1,27 @@
+- name: Ensure only necessary packages are installed
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - unattended-upgrades
+    - fail2ban
+
+- name: Start and enable base security
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - fail2ban
+
+- name: SSH Hardening
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+    - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no' }
+    - { regexp: '^#?UsePAM', line: 'UsePAM no' }
+  notify: Restart SSH

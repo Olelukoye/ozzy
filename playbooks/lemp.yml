@@ -1,0 +1,14 @@
+- name: Setup LEMP stack on ubu1
+  hosts: lemp
+  become: yes
+  roles:
+    - common
+    - monitoring
+    - base_security
+    - lemp
+
+  vars:
+    kibana_server_ip: "{{ kibana_ip }}"
+    mysql_db_user: "{{ db_user }}"
+    mysql_db_password: "{{ db_password }}"
+    elk_version: "{{ elk_version }}"

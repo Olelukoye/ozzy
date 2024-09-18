@@ -1,0 +1,66 @@
+- name: Install ELK Stack
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - elasticsearch
+    - logstash
+    - kibana
+
+- name: Configure Logstash
+  copy:
+    src: logstash.conf
+    dest: /etc/logstash/conf.d/logstash.conf
+
+- name: Configure Kibana
+  copy:
+    dest: /etc/kibana/kibana.yml
+    content: |
+      server.host: "0.0.0.0"
+
+- name: Start and enable ELK services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - elasticsearch
+    - logstash
+    - kibana
+
+- name: Open Kibana port
+  ufw:
+    rule: allow
+    port: 5601
+
+- name: Open Logstash port
+  ufw:
+    rule: allow
+    port: 5044
+
+- name: Check for existing indices in Elasticsearch
+  uri:
+    url: "http://localhost:9200/_cat/indices/ubuntu-logs*"
+    method: GET
+    return_content: yes
+  register: _check_indices
+  until: _check_indices.status == 200
+  retries: 5
+  delay: 30
+  ignore_errors: true
+
+- name: Create index pattern in Kibana
+  uri:
+    url: "http://localhost:5601/api/saved_objects/index-pattern/ubuntu-logs*"
+    method: POST
+    body: '{"attributes": {"title": "ubuntu-logs-*", "timeFieldName": "@timestamp"}}'
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+      kbn-xsrf: true
+  register: _result
+  until: _result.status == 200
+  retries: 5
+  delay: 30
+  when: _check_indices.status == 200
+  ignore_errors: true
